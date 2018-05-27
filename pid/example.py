@@ -26,6 +26,7 @@ def test():
     t = 5
     f = 100
     pid = PID(0.9, 5000, 0.001, f)
+    # pid = PID(0.3, 0.5, 0.01, f)
     pid.set_constraints(u1=-10, u2=10)
 
     x = []

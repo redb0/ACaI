@@ -9,6 +9,8 @@ class PID:
         self.d_t = 1 / self.measuring_frequency
 
         self.past_err = 0
+        self.past_past_err = 0
+        self.past_u = 0
         # self.err = 0
         # self.past_u = 0
         self.integral = 0
@@ -27,6 +29,8 @@ class PID:
         self.d_t = 1 / (self.measuring_frequency)
 
         self.past_err = 0
+        self.past_past_err = 0
+        self.past_u = 0
         # self.err = 0
         # self.past_u = 0
         self.integral = 0
@@ -62,12 +66,20 @@ class PID:
         # c_i = self.err / (1 / self.measuring_frequency)
         # c_d = (self.err - self.past_err) * (1 / self.measuring_frequency)
 
-        u = self.k_p * err + (1 / self.k_i) * c_i + self.k_d * c_d
-        # if u < self.u1:
-        #     u = self.u1
-        # elif u > self.u2:
-        #     u = self.u2
+        # u = self.k_p * err + (1 / self.k_i) * c_i + self.k_d * c_d
 
+        # рекурентный вид
+        # u = self.past_u + self.k_p * (err - self.past_err) + self.k_i * err + self.k_d * (err - 2*self.past_err - self.past_past_err)
+        # self.past_u = u
+        # нерекурентный вид
+        u = self.k_p * err + self.k_i * self.integral + self.k_d * d_e  # работает по формуле из википедии
+
+        if u < self.u1:
+            u = self.u1
+        elif u > self.u2:
+            u = self.u2
+
+        self.past_past_err = self.past_err
         self.past_err = err
 
         return u

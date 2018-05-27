@@ -134,7 +134,6 @@ def lsm_linear_parametrization(identifier, obj_value, w, lbd=1.):
     # a_n = get_a(last_a, gamma, obj_value, n)
     print(model_value)
     print(a_n)
-    # k_n = (np.eye(len(gamma)) - gamma @ grad.T) @ k * (1 / lbd)
     k_n = (np.eye(len(gamma)) - gamma @ grad.T) * k * (1 / lbd)
 
     identifier.matrix = k_n
