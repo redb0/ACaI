@@ -15,7 +15,8 @@ def get_obj_value(x, u, t):
         h = -10
     elif t >= 30:
         h = 0
-    return x + u + h + np.random.uniform(-1, 1)
+    return x + u + h# + np.random.uniform(-1, 1)
+    # return x + u
 
 
 def generator(t):
@@ -31,10 +32,11 @@ def generator(t):
 
 def test():
     t = 40
-    f = 5
+    f = 5  # 0.2 сек.
 
-    pid = PID(0.8, 0.15, 0.1, f)
-    pid.set_constraints(u1=-10, u2=20)
+    # pid = PID(0.8, 0.15, 0.1, f)
+    pid = PID(1, 0.5, 0.1, f)
+    pid.set_constraints(u1=-5, u2=15)
 
     x = []
     set_point = []
@@ -169,7 +171,9 @@ def test_asi():
 
 def main():
     test()
-    test_asi()
+    # test_asi()
+    # pid = PID(1, 0.5, 0.1, 10)
+    # print(pid)
 
 if __name__ == "__main__":
     main()
