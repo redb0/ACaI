@@ -117,7 +117,7 @@ class RecurrentPID(PID):
         if self._DoE:
             u += self.k_d * (err - 2 * self.last_err + self.last_last_err)
         else:
-            u -= self.k_d * (obj_value - 2 * self.last_obj_value + self.last_last_obj_value)
+            u -= self.k_d * (obj_value - 2 * self.last_obj_value + self.last_last_obj_value)  #FIXME: уточнить это место
 
         u = self.limit(u)
 
@@ -125,6 +125,7 @@ class RecurrentPID(PID):
         self.last_err = err
         self.last_last_obj_value = self.last_obj_value
         self.last_obj_value = obj_value
+        self.last_u = u
 
         return u
 

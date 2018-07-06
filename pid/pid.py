@@ -12,6 +12,8 @@ class PID:
         self._k_p = p
         self._k_i = i / self._msr_frequency
         self._k_d = d * self._msr_frequency
+        # self._k_i = i
+        # self._k_d = d
 
         self._PoE = True  # True - PoE (Proportional on error), False - PoM (Proportional on measurement),
         # self.PoM = False
@@ -151,4 +153,3 @@ class PID:
     @proportional_on_error.setter
     def proportional_on_error(self, value: bool) -> None:
         self._PoE = value
-
