@@ -1,3 +1,5 @@
+from typing import Union
+
 from pid.pid import PID
 
 
@@ -48,7 +50,23 @@ class RecurrentPID(PID):
         >>> RecurrentPID(1., 0.5, 0.1, 5, False, False)
         RecurrentPID(1.0, 0.1, 0.5, 5.0, False, False)
     """
-    def __init__(self, p, i, d, f=1., p_on_e=True, d_on_e=True):
+    def __init__(self, p, i, d, f: Union[int, float]=1.,
+                 p_on_e: bool=True, d_on_e: bool=True):
+        """
+        Конструктор.
+        :param p      : пропорциональный коэффициент.
+        :param i      : интегральный коэффициент.
+        :param d      : дифференциальный коэффициент.
+        :param f      : частота измерений (кол-во в секунду). Время дискретизации tao = 1 / f.
+        :param p_on_e : True - использование пропорциональной составляющей, 
+                        основанной на сигнале рассогласования. 
+                        False - пропорциональная составляющая, основанная 
+                        на измерениях значения объекта.
+        :param d_on_e : True - использование дифференциальной составляющей, 
+                        основанной на сигнале рассогласования. 
+                        False - дифференциальная составляющая, основанная 
+                        на измерениях значения объекта.
+        """
         super().__init__(p, i, d, f)
 
         self.proportional_on_error = p_on_e
@@ -61,7 +79,8 @@ class RecurrentPID(PID):
         self.last_obj_value = 0
         self.last_last_obj_value = 0
 
-    def initialization(self, obj_value, last_obj_value, u) -> None:
+    def initialization(self, obj_value: Union[int, float], last_obj_value: Union[int, float],
+                       u: Union[int, float]) -> None:
         """
         Инициализацция регулятора имеющимися значениями.
         Используется, когда регулятор внедряется в работающею систему 
@@ -75,7 +94,15 @@ class RecurrentPID(PID):
         self.last_obj_value = obj_value
         self.last_last_obj_value = last_obj_value
 
-    def update(self, set_point, obj_value):
+    def update(self, set_point: Union[int, float], obj_value: Union[int, float]) -> Union[int, float]:
+        """
+        Метод расчета управления.
+        Используется рекурентная формула PID-регулятора (см. описание класса).
+        
+        :param set_point: значение уставки, x*(t).
+        :param obj_value: значение выхода объекта, x(t).
+        :return: значение управления.
+        """
         # u = self.past_u + self.k_p * (err - self.past_err) + self.k_i * err + self.k_d * (err - 2*self.past_err + self.past_past_err)
 
         err = set_point - obj_value
@@ -91,8 +118,6 @@ class RecurrentPID(PID):
             u += self.k_d * (err - 2 * self.last_err + self.last_last_err)
         else:
             u -= self.k_d * (obj_value - 2 * self.last_obj_value + self.last_last_obj_value)
-
-        # u = self.k_p * err + self.k_i * self.integral + self.k_d * (err - self.last_error)
 
         u = self.limit(u)
 
