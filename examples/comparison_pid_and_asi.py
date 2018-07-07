@@ -174,130 +174,67 @@ def test_asi():
 def test_recurrent_pid():
     t = 40
     f = 5  # 0.2 сек.
-    pid = RecurrentPID(1., 2.5, 0.02, f, True, True)  # StandardPID
-    pid1 = RecurrentPID(1., 2.5, 0.02, f, True, False)
-    # pid1 = StandardPID(0.5, 0.7, 0.05, f, True, False)
-    pid2 = RecurrentPID(1., 2.5, 0.02, f, False, True)
-    pid3 = RecurrentPID(1., 2.5, 0.02, f, False, False)
+    p = 1.
+    i = 2.5
+    d = 0.02
+    pid_list = [RecurrentPID(p, i, d, f),
+                RecurrentPID(p, i, d, f, d_on_e=False),
+                RecurrentPID(p, i, d, f, p_on_e=False),
+                RecurrentPID(p, i, d, f, p_on_e=False, d_on_e=False)]
 
-    pid.set_constraints(-5, 15)
-    pid1.set_constraints(-5, 15)
-    pid2.set_constraints(-5, 15)
-    pid3.set_constraints(-5, 15)
-
-    # pid = PID(0.8, 0.15, 0.1, f)
-    # pid = PID(1, 0.5, 0.1, f)
+    for pid in pid_list:
+        pid.set_constraints(-5, 15)
 
     x = []
     set_point = []
-    y = []
-    feedback_list = []
-
-    pid1_list = []
-    pid2_list = []
-    pid3_list = []
-    y1 = []
-    y2 = []
-    y3 = []
+    y = [[], [], [], []]
+    feedback_list = [[], [], [], []]
 
     t_i = 0.
-    feedback = 0
-    feedback1 = 0
-    feedback2 = 0
-    feedback3 = 0
+    feedback = [0 for i in range(len(pid_list))]
 
     for i in range(t * f):
         x.append(t_i)
         set_point.append(generator(t_i))
 
-        feedback_list.append(feedback)
-        pid1_list.append(feedback1)
-        pid2_list.append(feedback2)
-        pid3_list.append(feedback3)
-        if i == 0:
-            feedback = get_obj_value(feedback, 0, t_i)
-            feedback1 = get_obj_value(feedback1, 0, t_i)
-            feedback2 = get_obj_value(feedback2, 0, t_i)
-            feedback3 = get_obj_value(feedback3, 0, t_i)
-        else:
-            feedback = get_obj_value(feedback, y[-1], t_i)
-            feedback1 = get_obj_value(feedback1, y1[-1], t_i)
-            feedback2 = get_obj_value(feedback2, y2[-1], t_i)
-            feedback3 = get_obj_value(feedback3, y3[-1], t_i)
+        for j in range(len(pid_list)):
+            feedback_list[j].append(feedback[j])
 
-        output = pid.update(set_point[i], feedback)
-        output1 = pid1.update(set_point[i], feedback1)
-        output2 = pid2.update(set_point[i], feedback2)
-        output3 = pid3.update(set_point[i], feedback3)
+            if i == 0:
+                feedback[j] = get_obj_value(feedback[j], 0, t_i)
+            else:
+                feedback[j] = get_obj_value(feedback[j], y[j][-1], t_i)
 
-        y.append(output)
-        y1.append(output1)
-        y2.append(output2)
-        y3.append(output3)
+            y[j].append(pid_list[j].update(set_point[i], feedback[j]))
         t_i += 1 / f
-    # print(x)
+    print(x)
     print(set_point)
     print(y)
     print(feedback_list)
 
-    ax = plt.subplot(221)
-
-    # plt.plot(x, y, label="Управление")
-    # plt.plot(x, set_point, '--', label="Уставка")
-    # plt.plot(x, feedback_list, label="Объект")
-
-    # plt.plot(x, y1, label="u, PID1")
-    # plt.plot(x, pid1_list, label="Объект, 1")
-    # plt.plot(x, y2, label="u, PID2")
-    # plt.plot(x, pid2_list, label="Объект, 2")
-    # plt.plot(x, y3, label="u, PID3")
-    # plt.plot(x, pid3_list, label="Объект, 3")
-
-    ax.plot(x, y, label="Управление")
-    ax.plot(x, set_point, '--', label="Уставка")
-    ax.plot(x, feedback_list, label="Объект")
-    plt.xlabel('time (s)')
-    plt.ylabel('PID (PV)')
-    plt.title('Рекурентная формула')
-    plt.grid(True)
-    plt.legend()
-
-    ax = plt.subplot(222)
-    ax.plot(x, set_point, '--', label="Уставка")
-    ax.plot(x, y1, label="u, PID1")
-    ax.plot(x, pid1_list, label="Объект, 1")
-    plt.xlabel('time (s)')
-    plt.ylabel('PID (PV)')
-    plt.title('D on M')
-    plt.grid(True)
-    plt.legend()
-
-    ax = plt.subplot(223)
-    ax.plot(x, set_point, '--', label="Уставка")
-    ax.plot(x, y2, label="u, PID2")
-    plt.plot(x, pid2_list, label="Объект, 2")
-    plt.xlabel('time (s)')
-    plt.ylabel('PID (PV)')
-    plt.title('P on M')
-    plt.grid(True)
-    plt.legend()
-
-    ax = plt.subplot(224)
-    ax.plot(x, set_point, '--', label="Уставка")
-    ax.plot(x, y3, label="u, PID3")
-    ax.plot(x, pid3_list, label="Объект, 3")
-
-    plt.xlabel('time (s)')
-    plt.ylabel('PID (PV)')
-    plt.title('DonM and PonM')
-
-    plt.grid(True)
-    plt.legend()
+    for i in range(len(pid_list)):
+        ax = plt.subplot(221 + i)
+        ax.plot(x, y[i], label="Управление")
+        ax.plot(x, set_point, '--', label="Уставка")
+        ax.plot(x, feedback_list[i], label="Объект")
+        plt.xlabel('time (s)')
+        plt.ylabel('PID (PV)')
+        if i == 0:
+            plt.title('Рекурентная формула')
+        elif i == 1:
+            plt.title('D on M')
+        elif i == 2:
+            plt.title('P on M')
+        elif i == 3:
+            plt.title('DonM and PonM')
+        plt.grid(True)
+        plt.legend()
 
     plt.show()
 
 
 def test_standard_pid():
+    # pid1 = StandardPID(0.5, 0.7, 0.05, f, True, False)
     pass
 
 
