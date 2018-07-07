@@ -32,6 +32,17 @@ def generator(t):
     return y
 
 
+def get_set_point(t):
+    y = 20
+    if 5 <= t < 15:
+        y = 70
+    elif 15 <= t < 25:
+        y = 70 + 2 * (t - 15)
+    elif 25 <= t < 35:
+        y = 90 - 1.5 * (t - 25)
+    return y
+
+
 def test():
     t = 40
     f = 5  # 0.2 сек.
@@ -240,53 +251,107 @@ def test_standard_pid():
     p = 1.
     i = 2.5
     d = 0.02
-    # четыре варианта PID-регулятора.
+    # Четыре варианта стандартной формулы PID-регулятора.
     pid_list = [StandardPID(p, i, d, f),
                 StandardPID(p, i, d, f, d_on_e=False),
                 StandardPID(p, i, d, f, p_on_e=False),
                 StandardPID(p, i, d, f, p_on_e=False, d_on_e=False)]
 
+    # Установка ограничений
     for pid in pid_list:
         pid.set_constraints(-5, 15)
 
+    t_i = 0.
     x = []
     set_point = []
-    y = [[] for i in range(len(pid_list))]
+    u = [[] for i in range(len(pid_list))]  # управление
     obj_value_list = [[] for i in range(len(pid_list))]
-
-    t_i = 0.
-    obj_values = [0 for i in range(len(pid_list))]
 
     for i in range(t * f):
         x.append(t_i)
         set_point.append(generator(t_i))
 
         for j in range(len(pid_list)):
-            obj_value_list[j].append(obj_values[j])
-
             if i == 0:
-                obj_values[j] = get_obj_value(obj_values[j], 0, t_i)
+                # Начальное значение объекта = 0
+                obj_value_list[j].append(get_obj_value(0, 0, t_i))
             else:
-                obj_values[j] = get_obj_value(obj_values[j], y[j][-1], t_i)
+                obj_value_list[j].append(get_obj_value(obj_value_list[j][-1], u[j][-1], t_i))
 
-            y[j].append(pid_list[j].update(set_point[i], obj_values[j]))
+            # Расчет управления
+            u[j].append(pid_list[j].update(set_point[i], obj_value_list[j][-1]))
         t_i += 1 / f
 
     for i in range(len(pid_list)):
         ax = plt.subplot(221 + i)
-        ax.plot(x, y[i], label="Управление")
+        ax.plot(x, u[i], label="Управление")
         ax.plot(x, set_point, '--', label="Уставка")
         ax.plot(x, obj_value_list[i], label="Объект")
-        plt.xlabel('time (s)')
         plt.ylabel('PID (PV)')
         if i == 0:
             plt.title('Стандартная формула')
         elif i == 1:
             plt.title('D on M')
         elif i == 2:
+            plt.xlabel('time (s)')
             plt.title('P on M')
         elif i == 3:
+            plt.xlabel('time (s)')
             plt.title('DonM and PonM')
+        plt.grid(True)
+        plt.legend()
+
+    plt.show()
+
+
+def test_pid():
+    t = 40  # время работы
+    f = 5  # частота измерений, 0.2 сек.
+    p = 1.
+    i = 2.5
+    d = 0.02
+    # Четыре варианта стандартной формулы PID-регулятора.
+    pid_list = [RecurrentPID(p, i, d, f),
+                RecurrentPID(p, i, d, f, p_on_e=False, d_on_e=False)]
+                # StandardPID(p, i, d, f, p_on_e=False),
+                # StandardPID(p, i, d, f, p_on_e=False, d_on_e=False)]
+
+    # Установка ограничений
+    for pid in pid_list:
+        pid.set_constraints(-5, 15)
+
+    t_i = 0.
+    x = []
+    set_point = []
+    u = [[] for i in range(len(pid_list))]  # управление
+    obj_value_list = [[] for i in range(len(pid_list))]
+
+    for i in range(t * f):
+        x.append(t_i)
+        set_point.append(get_set_point(t_i))
+
+        for j in range(len(pid_list)):
+            if i == 0:
+                # Начальное значение объекта = 0
+                obj_value_list[j].append(get_obj_value(0, 0, t_i))
+            else:
+                obj_value_list[j].append(get_obj_value(obj_value_list[j][-1], u[j][-1], t_i))
+
+            # Расчет управления
+            u[j].append(pid_list[j].update(set_point[i], obj_value_list[j][-1]))
+        t_i += 1 / f
+
+    for i in range(len(pid_list)):
+        ax = plt.subplot(121 + i)
+        ax.plot(x, u[i], label="Управление")
+        ax.plot(x, set_point, '--', label="Уставка")
+        ax.plot(x, obj_value_list[i], label="Объект")
+        plt.ylabel('PID (PV)')
+        plt.xlabel('time (s)')
+        if i == 0:
+            plt.title('Стандартная формула')
+        elif i == 1:
+            plt.title('D on M')
         plt.grid(True)
         plt.legend()
 
@@ -299,7 +364,11 @@ def main():
     # pid = PID(1, 0.5, 0.1, 10)
     # print(pid)
     # test_recurrent_pid()
-    test_standard_pid()
+
+    # Тест реализации стандартной формулы PID-регулятора
+    # test_standard_pid()
+
+    test_pid()
 
 if __name__ == "__main__":
     main()
