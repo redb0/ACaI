@@ -83,6 +83,7 @@ class StandardPID(PID):
         self.last_error = 0
         self.last_obj_value = 0
         self.integral = 0
+        self.p_term = 0
 
     def initialization(self, obj_value, u) -> None:
         """
@@ -105,16 +106,21 @@ class StandardPID(PID):
         :return: значение управления.
         """
         # u = self.k_p * err + self.k_i * self.integral - self.k_d * d_e
-
+        u = 0
         err = set_point - obj_value
-        self.integral += self.k_i * err
-        self.integral = self.limit(self.integral)
-        u = self.integral
+        self.integral += (self.k_i * err)
+        # self.integral = self.limit(self.integral)
+        # u = self.integral
 
         if self._PoE:
             u += self.k_p * err
         else:
-            u -= self.k_p * (obj_value - self.last_obj_value)
+            # self.p_term -= (self.k_p * (obj_value - self.last_obj_value))
+            self.integral -= (self.k_p * (obj_value - self.last_obj_value))
+            # u += self.p_term
+
+        self.integral = self.limit(self.integral)
+        u += self.integral
 
         if self._DoE:
             u += self.k_d * (err - self.last_error)

@@ -172,11 +172,12 @@ def test_asi():
 
 
 def test_recurrent_pid():
-    t = 40
-    f = 5  # 0.2 сек.
+    t = 40  # время работы
+    f = 5  # частота измерений, 0.2 сек.
     p = 1.
     i = 2.5
     d = 0.02
+    # четыре варианта PID-регулятора.
     pid_list = [RecurrentPID(p, i, d, f),
                 RecurrentPID(p, i, d, f, d_on_e=False),
                 RecurrentPID(p, i, d, f, p_on_e=False),
@@ -187,25 +188,25 @@ def test_recurrent_pid():
 
     x = []
     set_point = []
-    y = [[], [], [], []]
-    feedback_list = [[], [], [], []]
+    y = [[] for i in range(len(pid_list))]
+    feedback_list = [[] for i in range(len(pid_list))]
 
     t_i = 0.
-    feedback = [0 for i in range(len(pid_list))]
+    obj_values = [0 for i in range(len(pid_list))]
 
     for i in range(t * f):
         x.append(t_i)
         set_point.append(generator(t_i))
 
         for j in range(len(pid_list)):
-            feedback_list[j].append(feedback[j])
+            feedback_list[j].append(obj_values[j])
 
             if i == 0:
-                feedback[j] = get_obj_value(feedback[j], 0, t_i)
+                obj_values[j] = get_obj_value(obj_values[j], 0, t_i)
             else:
-                feedback[j] = get_obj_value(feedback[j], y[j][-1], t_i)
+                obj_values[j] = get_obj_value(obj_values[j], y[j][-1], t_i)
 
-            y[j].append(pid_list[j].update(set_point[i], feedback[j]))
+            y[j].append(pid_list[j].update(set_point[i], obj_values[j]))
         t_i += 1 / f
     print(x)
     print(set_point)
@@ -234,8 +235,62 @@ def test_recurrent_pid():
 
 
 def test_standard_pid():
-    # pid1 = StandardPID(0.5, 0.7, 0.05, f, True, False)
-    pass
+    t = 40  # время работы
+    f = 5  # частота измерений, 0.2 сек.
+    p = 1.
+    i = 2.5
+    d = 0.02
+    # четыре варианта PID-регулятора.
+    pid_list = [StandardPID(p, i, d, f),
+                StandardPID(p, i, d, f, d_on_e=False),
+                StandardPID(p, i, d, f, p_on_e=False),
+                StandardPID(p, i, d, f, p_on_e=False, d_on_e=False)]
+
+    for pid in pid_list:
+        pid.set_constraints(-5, 15)
+
+    x = []
+    set_point = []
+    y = [[] for i in range(len(pid_list))]
+    obj_value_list = [[] for i in range(len(pid_list))]
+
+    t_i = 0.
+    obj_values = [0 for i in range(len(pid_list))]
+
+    for i in range(t * f):
+        x.append(t_i)
+        set_point.append(generator(t_i))
+
+        for j in range(len(pid_list)):
+            obj_value_list[j].append(obj_values[j])
+
+            if i == 0:
+                obj_values[j] = get_obj_value(obj_values[j], 0, t_i)
+            else:
+                obj_values[j] = get_obj_value(obj_values[j], y[j][-1], t_i)
+
+            y[j].append(pid_list[j].update(set_point[i], obj_values[j]))
+        t_i += 1 / f
+
+    for i in range(len(pid_list)):
+        ax = plt.subplot(221 + i)
+        ax.plot(x, y[i], label="Управление")
+        ax.plot(x, set_point, '--', label="Уставка")
+        ax.plot(x, obj_value_list[i], label="Объект")
+        plt.xlabel('time (s)')
+        plt.ylabel('PID (PV)')
+        if i == 0:
+            plt.title('Стандартная формула')
+        elif i == 1:
+            plt.title('D on M')
+        elif i == 2:
+            plt.title('P on M')
+        elif i == 3:
+            plt.title('DonM and PonM')
+        plt.grid(True)
+        plt.legend()
+
+    plt.show()
 
 
 def main():
@@ -243,7 +298,8 @@ def main():
     # test_asi()
     # pid = PID(1, 0.5, 0.1, 10)
     # print(pid)
-    test_recurrent_pid()
+    # test_recurrent_pid()
+    test_standard_pid()
 
 if __name__ == "__main__":
     main()
