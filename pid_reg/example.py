@@ -272,15 +272,71 @@ def test_pid():
     plt.show()
 
 
+def test_pid2():
+    t = 40  # время работы
+    f = 5  # частота измерений, 0.2 сек.
+    p = 1.
+    i = 2.5
+    d = 0.02
+    pid_list = [RecurrentPID(p, i, d, f, p_on_e=False)]
+                # RecurrentPID(p, i, d, f, p_on_e=False, d_on_e=False)]
+
+    # Установка ограничений
+    for pid in pid_list:
+        pid.set_constraints(-5, 15)
+
+    t_i = 0.
+    x = []
+    set_point = []
+    u = [[] for _ in range(len(pid_list))]  # управление
+    obj_value_list = [[] for _ in range(len(pid_list))]
+
+    for i in range(t * f):
+        x.append(t_i)
+        set_point.append(get_set_point(t_i))
+
+        for j in range(len(pid_list)):
+            if i == 0:
+                # Начальное значение объекта = 0
+                obj_value_list[j].append(get_obj_value(0, 0, t_i))
+            else:
+                obj_value_list[j].append(get_obj_value(obj_value_list[j][-1], u[j][-1], t_i))
+
+            # Расчет управления
+            if (4*f) <= i <= (8*f):
+                u[j].append(6)
+            else:
+                u[j].append(pid_list[j].update(set_point[i], obj_value_list[j][-1]))
+        t_i += 1 / f
+
+    for i in range(len(pid_list)):
+        ax = plt.subplot(121 + i)
+        ax.plot(x, u[i], label="Управление")
+        ax.plot(x, set_point, '--', label="Уставка")
+        ax.plot(x, obj_value_list[i], label="Объект")
+        plt.ylabel('PID (PV)')
+        plt.xlabel('time (s)')
+        if i == 0:
+            plt.title('Стандартная формула')
+        elif i == 1:
+            plt.title('D on M')
+        plt.grid(True)
+        plt.legend()
+
+    plt.show()
+
+
 def main():
     # test()
 
     # Тест реализации стандартной формулы PID-регулятора
-    test_standard_pid()
+    # test_standard_pid()
 
-    test_recurrent_pid()
+    # test_recurrent_pid()
 
-    test_pid()
+    # test_pid()
+
+    test_pid2()
 
 if __name__ == "__main__":
     main()
